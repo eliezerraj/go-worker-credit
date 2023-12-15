@@ -49,7 +49,7 @@ Mappings:
     application:
       value: go-worker-credit
     component:
-      value: go-credit
+      value: go-worker-credit
     PCIClassification:
       value: non-pci
     PCIScope:
