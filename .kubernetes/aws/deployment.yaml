@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: &app-name go-worker-balance
+  name: &app-name go-worker-credit
   namespace: test-a
   labels:
     app: *app-name
@@ -20,7 +20,7 @@ spec:
       volumes:
       - name: volume-secret
         secret:
-          secretName: es-rds-arch-secret-go-worker-balance
+          secretName: es-rds-arch-secret-go-worker-credit
       securityContext:
         runAsUser: 1000
         runAsGroup: 2000
@@ -28,13 +28,13 @@ spec:
       containers:
       - name: *app-name
         #imagePullPolicy: Never
-        image: 908671954593.dkr.ecr.us-east-2.amazonaws.com/go-worker-balance:latest
+        image: 908671954593.dkr.ecr.us-east-2.amazonaws.com/go-worker-credit:latest
         env:
           - name: AWS_XRAY_DAEMON_ADDRESS
             value: xray-service.amazon-cloudwatch:2000
         envFrom:
         - configMapRef:
-            name: go-worker-balance-cm
+            name: go-worker-credit-cm
         volumeMounts:
           - mountPath: "/var/pod/secret"
             name: volume-secret
@@ -60,7 +60,7 @@ spec:
               command:
               - /bin/sh
               - -c
-              - "ps -A | grep go-worker-balance | grep -v grep"
+              - "ps -A | grep go-worker-credit | grep -v grep"
             initialDelaySeconds: 3
             periodSeconds: 30
             failureThreshold: 3
