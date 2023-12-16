@@ -55,17 +55,17 @@ spec:
           capabilities:
             drop:
             - ALL
-        livenessProbe:
-            exec:
-              command:
-              - /bin/sh
-              - -c
-              - "ps -A | grep go-worker-credit | grep -v grep"
-            initialDelaySeconds: 3
-            periodSeconds: 30
-            failureThreshold: 3
-            successThreshold: 1
-            timeoutSeconds: 3
+        #livenessProbe:
+        #    exec:
+        #      command:
+        #      - /bin/sh
+        #      - -c
+        #      - "ps -A | grep go-worker-credit | grep -v grep"
+        #    initialDelaySeconds: 3
+        #    periodSeconds: 30
+        #    failureThreshold: 3
+        #    successThreshold: 1
+        #    timeoutSeconds: 3
       terminationGracePeriodSeconds: 60
       affinity:
         podAntiAffinity:

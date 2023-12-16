@@ -1,4 +1,4 @@
-#docker build -t go-worker-balance .
+#docker build -t go-worker-credit .
 
 FROM golang:1.21 As builder
 
