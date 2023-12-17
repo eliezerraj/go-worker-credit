@@ -61,7 +61,7 @@ func loadLocalEnv(){
 	envKafka.KafkaConfigurations.Protocol = "PLAINTEXT"
 	envKafka.KafkaConfigurations.Mechanisms = "PLAINTEXT"
 
-	envKafka.KafkaConfigurations.Clientid = "GO-WORKER-BALANCE"
+	envKafka.KafkaConfigurations.Clientid = "GO-WORKER-CREDIT"
 	envKafka.KafkaConfigurations.Brokers1 = "b-1.mskarchtest02.9vkh4b.c3.kafka.us-east-2.amazonaws.com:9092"
 	envKafka.KafkaConfigurations.Brokers2 = "b-2.mskarchtest02.9vkh4b.c3.kafka.us-east-2.amazonaws.com:9092"
 	envKafka.KafkaConfigurations.Groupid = "GROUP-02"
@@ -155,6 +155,10 @@ func getEnv() {
 	}
 	if os.Getenv("DB_SCHEMA") !=  "" {	
 		envDB.Schema = os.Getenv("DB_SCHEMA")
+	}
+
+	if os.Getenv("SERVER_URL_DOMAIN") !=  "" {	
+		serverUrlDomain = os.Getenv("SERVER_URL_DOMAIN")
 	}
 
 	if os.Getenv("KAFKA_USER") !=  "" {
