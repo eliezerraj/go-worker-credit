@@ -25,5 +25,7 @@ data:
   KAFKA_BROKER_3: ""
   KAFKA_PARTITION: "1"
   KAFKA_REPLICATION: "1"
-  SERVER_URL_DOMAIN: "http://svc-go-credit.test-a.svc.cluster.local:5001"
   TOPICS: "topic.credit"
+  #SERVER_URL_DOMAIN: "http://svc-go-credit.test-a.svc.cluster.local:5001"
+  SERVER_URL_DOMAIN: "https://vpce.global.dev.caradhras.io/pv"
+  X_APIGW_API_ID: "cy5ry2263h"

@@ -28,7 +28,7 @@ import(
 var(
 	logLevel 	= 	zerolog.DebugLevel
 	noAZ		=	true // set only if you get to split the xray trace per AZ
-	serverUrlDomain, ServerUrlDomain2, topics		string
+	serverUrlDomain, xApigwId,   topics		string
 	envKafka		core.KafkaConfig
 	infoPod			core.InfoPod
 	envDB	 		core.DatabaseRDS
@@ -129,6 +129,9 @@ func getEnv() {
 	if os.Getenv("SERVER_URL_DOMAIN") !=  "" {	
 		serverUrlDomain = os.Getenv("SERVER_URL_DOMAIN")
 	}
+	if os.Getenv("X_APIGW_API_ID") !=  "" {	
+		xApigwId = os.Getenv("X_APIGW_API_ID")
+	}
 
 	if os.Getenv("KAFKA_USER") !=  "" {
 		envKafka.KafkaConfigurations.Username = os.Getenv("KAFKA_USER")
@@ -203,7 +206,7 @@ func main()  {
 		break
 	}
 
-	restapi	:= restapi.NewRestApi(serverUrlDomain, ServerUrlDomain2)
+	restapi	:= restapi.NewRestApi(serverUrlDomain, xApigwId)
 
 	repoDB = db_postgre.NewWorkerRepository(dataBaseHelper)
 

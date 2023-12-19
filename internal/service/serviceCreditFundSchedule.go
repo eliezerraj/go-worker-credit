@@ -34,7 +34,7 @@ func (s WorkerService) CreditFundSchedule(ctx context.Context, transfer core.Tra
 	credit.Currency = transfer.Currency
 	credit.Amount = transfer.Amount
 
-	_, err = s.restapi.PostData(ctx, s.restapi.ServerUrlDomain ,"/add", credit)
+	_, err = s.restapi.PostData(ctx, s.restapi.ServerUrlDomain, s.restapi.XApigwId ,"/add", credit)
 	if err != nil {
 		return err
 	}
