@@ -40,6 +40,7 @@ func (s WorkerService) CreditFundSchedule(ctx context.Context, transfer core.Tra
 	}
 
 	transfer.Status = "CREDIT_DONE"
+	//_transfer := core.Transfer{}
 	_, err = s.workerRepository.Update(ctx,tx ,transfer)
 	if err != nil {
 		return err
