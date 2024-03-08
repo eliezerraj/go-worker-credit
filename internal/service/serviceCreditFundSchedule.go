@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"github.com/go-worker-credit/internal/core"
+	"github.com/go-worker-credit/internal/erro"
 	"github.com/aws/aws-xray-sdk-go/xray"
 
 )
@@ -41,10 +42,13 @@ func (s WorkerService) CreditFundSchedule(ctx context.Context, transfer core.Tra
 	}
 
 	transfer.Status = "CREDIT_DONE"
-	//_transfer := core.Transfer{}
-	_, err = s.workerRepository.Update(ctx,tx ,transfer)
+	res_update, err := s.workerRepository.Update(ctx,tx ,transfer)
 	if err != nil {
 		return err
+	}
+	if res_update == 0 {
+		err = erro.ErrUpdate
+		return  err
 	}
 
 	return nil
