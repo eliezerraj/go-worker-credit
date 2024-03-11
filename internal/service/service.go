@@ -14,8 +14,8 @@ type WorkerService struct {
 	restapi					*restapi.RestApiSConfig
 }
 
-func NewWorkerService(workerRepository *db_postgre.WorkerRepository,
-					restapi				*restapi.RestApiSConfig ) *WorkerService{
+func NewWorkerService(	workerRepository *db_postgre.WorkerRepository,
+						restapi	*restapi.RestApiSConfig ) *WorkerService{
 	childLogger.Debug().Msg("NewWorkerService")
 
 	return &WorkerService{

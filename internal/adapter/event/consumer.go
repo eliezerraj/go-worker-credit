@@ -10,7 +10,7 @@ import (
 	"strconv"
 
 	"github.com/rs/zerolog/log"
-	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/go-worker-credit/internal/core"
 	"github.com/go-worker-credit/internal/service"
 	"github.com/aws/aws-xray-sdk-go/xray"
@@ -42,7 +42,8 @@ func NewConsumerWorker(	ctx context.Context,
 								"client.id": 					configurations.KafkaConfigurations.Clientid,
 								"session.timeout.ms":    		6000,
 								"enable.idempotence":			true,
-								"auto.offset.reset":     		"latest",  
+								// "auto.offset.reset":     		"latest", 
+								"auto.offset.reset":     		"earliest",  
 								}
 
 	consumer, err := kafka.NewConsumer(config)
@@ -100,18 +101,18 @@ func (c *ConsumerWorker) Consumer(ctx context.Context, wg *sync.WaitGroup, topic
 					event := core.Event{}
 					json.Unmarshal(e.Value, &event)
 
-					newSegment := "go-worker-debit:"+ event.EventData.Transfer.AccountIDTo + ":" + strconv.Itoa(event.EventData.Transfer.ID)
+					newSegment := "go-worker-credit:"+ event.EventData.Transfer.AccountIDTo + ":" + strconv.Itoa(event.EventData.Transfer.ID)
 					ctxray, seg := xray.BeginSegment(ctx, newSegment)
 					defer seg.Close(nil)
 
 					err = c.workerService.CreditFundSchedule(ctxray, *event.EventData.Transfer)
 					if err != nil {
-						childLogger.Error().Err(err).Msg("Erro no service.update")
+						childLogger.Error().Err(err).Msg("Erro no Consumer.CreditFundSchedule")
+						childLogger.Debug().Msg("ROLLBACK!!!!")
 					} else {
 						childLogger.Debug().Msg("COMMIT!!!!")
 						c.consumer.Commit()
 					}
-					
 				case kafka.Error:
 					childLogger.Error().Err(e).Msg("kafka.Error")
 					if e.Code() == kafka.ErrAllBrokersDown {
