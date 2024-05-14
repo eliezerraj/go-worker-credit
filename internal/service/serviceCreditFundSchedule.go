@@ -2,12 +2,34 @@ package service
 
 import (
 	"context"
-	//"errors"
+	"github.com/rs/zerolog/log"
+	"github.com/go-worker-credit/internal/repository/postgre"
+	"github.com/go-worker-credit/internal/adapter/restapi"
 	"github.com/go-worker-credit/internal/core"
 	"github.com/go-worker-credit/internal/erro"
 	"github.com/aws/aws-xray-sdk-go/xray"
 
 )
+
+var childLogger = log.With().Str("service", "service").Logger()
+
+type WorkerService struct {
+	workerRepository 		*postgre.WorkerRepository
+	restEndpoint			*core.RestEndpoint
+	restApiService			*restapi.RestApiService
+}
+
+func NewWorkerService(	workerRepository *postgre.WorkerRepository,
+						restEndpoint		*core.RestEndpoint,
+						restApiService		*restapi.RestApiService) *WorkerService{
+	childLogger.Debug().Msg("NewWorkerService")
+
+	return &WorkerService{
+		workerRepository:	workerRepository,
+		restEndpoint:		restEndpoint,
+		restApiService:		restApiService,
+	}
+}
 
 func (s WorkerService) CreditFundSchedule(ctx context.Context, transfer core.Transfer) (error){
 	childLogger.Debug().Msg("CreditFundSchedule")
@@ -37,7 +59,11 @@ func (s WorkerService) CreditFundSchedule(ctx context.Context, transfer core.Tra
 	credit.Type = transfer.Type
 	transfer.Status = "CREDIT_DONE"
 
-	_, err = s.restapi.PostData(ctx, s.restapi.ServerUrlDomain, s.restapi.XApigwId ,"/add", credit)
+	_, err = s.restApiService.PostData(ctx, 
+										s.restEndpoint.ServiceUrlDomain, 
+										s.restEndpoint.XApigwId,
+										"/add", 
+										credit)
 	if err != nil {
 		switch err{
 			case erro.ErrTransInvalid:

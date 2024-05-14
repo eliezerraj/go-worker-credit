@@ -58,7 +58,9 @@ func NewConsumerWorker(	ctx context.Context,
 	}, nil
 }
 
-func (c *ConsumerWorker) Consumer(ctx context.Context, wg *sync.WaitGroup, topic string) {
+func (c *ConsumerWorker) Consumer(	ctx context.Context, 
+									wg *sync.WaitGroup, 
+									topic string) {
 	childLogger.Debug().Msg("Consumer")
 
 	topics := []string{topic}

@@ -6,15 +6,14 @@ metadata:
   labels:
     app: *app-name
 data:
-  POD_NAME: "go-worker-credit"
+  POD_NAME: "go-worker-credit.k8"
   API_VERSION: "1.1"
-  #DB_HOST: "db-arch.couoacqalfwt.us-east-2.rds.amazonaws.com"
   DB_HOST: "rds-proxy-db-arch.proxy-couoacqalfwt.us-east-2.rds.amazonaws.com"
   DB_PORT: "5432"
   DB_NAME: "postgres"
   DB_SCHEMA: "public"
   DB_DRIVER: "postgres"
-  NO_AZ: "true"
+  SETPOD_AZ: "false"
   KAFKA_USER: "admin"
   KAFKA_PASSWORD: "admin"
   KAFKA_PROTOCOL: "PLAINTEXT"
@@ -27,6 +26,7 @@ data:
   KAFKA_PARTITION: "3"
   KAFKA_REPLICATION: "2"
   TOPICS: "topic.credit.01"
-  #SERVER_URL_DOMAIN: "http://svc-go-credit.test-a.svc.cluster.local:5001"
-  SERVER_URL_DOMAIN: "https://vpce.global.dev.caradhras.io/pv"
+  SERVICE_URL_DOMAIN: "https://vpce.global.dev.caradhras.io/pv"
   X_APIGW_API_ID: "cy5ry2263h"
+
+  #SERVICE_URL_DOMAIN: "http://svc-go-credit.test-a.svc.cluster.local:5001"
