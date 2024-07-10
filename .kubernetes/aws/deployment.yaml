@@ -28,9 +28,6 @@ spec:
       containers:
       - name: *app-name
         image: 908671954593.dkr.ecr.us-east-2.amazonaws.com/go-worker-credit:latest
-        env:
-          - name: AWS_XRAY_DAEMON_ADDRESS
-            value: xray-service.amazon-cloudwatch:2000
         envFrom:
         - configMapRef:
             name: go-worker-credit-cm

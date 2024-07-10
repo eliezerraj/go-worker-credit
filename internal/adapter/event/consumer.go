@@ -13,8 +13,11 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/go-worker-credit/internal/core"
 	"github.com/go-worker-credit/internal/service"
-	"github.com/aws/aws-xray-sdk-go/xray"
+	"github.com/go-worker-credit/internal/lib"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/contrib/propagators/aws/xray"
 )
 
 var childLogger = log.With().Str("adpater", "kafka").Logger()
@@ -23,6 +26,7 @@ type ConsumerWorker struct{
 	configurations  *core.KafkaConfig
 	consumer        *kafka.Consumer
 	workerService	*service.WorkerService
+	tracer 			trace.Tracer
 }
 
 func NewConsumerWorker(	ctx context.Context, 
@@ -60,10 +64,23 @@ func NewConsumerWorker(	ctx context.Context,
 
 func (c *ConsumerWorker) Consumer(	ctx context.Context, 
 									wg *sync.WaitGroup, 
-									topic string) {
+									appServer core.WorkerAppServer) {
 	childLogger.Debug().Msg("Consumer")
 
-	topics := []string{topic}
+	// ---------------------- OTEL ---------------
+	childLogger.Info().Str("OTEL_EXPORTER_OTLP_ENDPOINT :", appServer.ConfigOTEL.OtelExportEndpoint).Msg("")
+	
+	tp := lib.NewTracerProvider(ctx, appServer.ConfigOTEL, appServer.InfoPod)
+	defer func() { 
+		err := tp.Shutdown(ctx)
+		if err != nil{
+			childLogger.Error().Err(err).Msg("Erro closing OTEL tracer !!!")
+		}
+	}()
+	otel.SetTextMapPropagator(xray.Propagator{})
+	otel.SetTracerProvider(tp)
+
+	topics := []string{appServer.KafkaConfig.Topic.Credit}
 	sigchan := make(chan os.Signal, 1)
 	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
 
@@ -74,7 +91,6 @@ func (c *ConsumerWorker) Consumer(	ctx context.Context,
 
 	run := true
 	for run {
-		
 		select {
 			case sig := <-sigchan:
 				childLogger.Debug().Interface("Caught signal terminating: ", sig).Msg("")
@@ -103,11 +119,11 @@ func (c *ConsumerWorker) Consumer(	ctx context.Context,
 					event := core.Event{}
 					json.Unmarshal(e.Value, &event)
 
-					newSegment := "go-worker-credit:"+ event.EventData.Transfer.AccountIDTo + ":" + strconv.Itoa(event.EventData.Transfer.ID)
-					ctxray, seg := xray.BeginSegment(ctx, newSegment)
-					defer seg.Close(nil)
+					tracer := tp.Tracer("go-worker-credit:" + event.EventData.Transfer.AccountIDTo + ":" + strconv.Itoa(event.EventData.Transfer.ID))
+					ctx, span := tracer.Start(ctx, "go-worker-credit")
+					defer span.End()
 
-					err = c.workerService.CreditFundSchedule(ctxray, *event.EventData.Transfer)
+					err = c.workerService.CreditFundSchedule(ctx, *event.EventData.Transfer)
 					if err != nil {
 						childLogger.Error().Err(err).Msg("Erro no Consumer.CreditFundSchedule")
 						childLogger.Debug().Msg("ROLLBACK!!!!")

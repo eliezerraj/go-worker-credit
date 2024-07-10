@@ -7,8 +7,7 @@ import (
 	"github.com/go-worker-credit/internal/adapter/restapi"
 	"github.com/go-worker-credit/internal/core"
 	"github.com/go-worker-credit/internal/erro"
-	"github.com/aws/aws-xray-sdk-go/xray"
-
+	"github.com/go-worker-credit/internal/lib"
 )
 
 var childLogger = log.With().Str("service", "service").Logger()
@@ -35,8 +34,7 @@ func (s WorkerService) CreditFundSchedule(ctx context.Context, transfer core.Tra
 	childLogger.Debug().Msg("CreditFundSchedule")
 	childLogger.Debug().Interface("===>transfer: ",transfer).Msg("")
 	
-	_, root := xray.BeginSubsegment(ctx, "Service.CreditFundSchedule")
-	defer root.Close(nil)
+	span := lib.Span(ctx, "service.CreditFundSchedule")
 
 	tx, err := s.workerRepository.StartTx(ctx)
 	if err != nil {
@@ -49,6 +47,7 @@ func (s WorkerService) CreditFundSchedule(ctx context.Context, transfer core.Tra
 		} else {
 			tx.Commit()
 		}
+		span.End()
 	}()
 
 	// Post
@@ -59,10 +58,10 @@ func (s WorkerService) CreditFundSchedule(ctx context.Context, transfer core.Tra
 	credit.Type = transfer.Type
 	transfer.Status = "CREDIT_DONE"
 
+	urlDomain := s.restEndpoint.ServiceUrlDomain + "/add"
 	_, err = s.restApiService.PostData(ctx, 
-										s.restEndpoint.ServiceUrlDomain, 
+										urlDomain, 
 										s.restEndpoint.XApigwId,
-										"/add", 
 										credit)
 	if err != nil {
 		switch err{

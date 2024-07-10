@@ -1,6 +1,6 @@
 #docker build -t go-worker-credit .
 
-FROM golang:1.21 As builder
+FROM golang:1.22 As builder
 
 WORKDIR /app
 COPY . .
