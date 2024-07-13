@@ -21,6 +21,7 @@ import (
 )
 
 var childLogger = log.With().Str("adpater", "kafka").Logger()
+var tracer 			trace.Tracer
 
 type ConsumerWorker struct{
 	configurations  *core.KafkaConfig
@@ -79,6 +80,8 @@ func (c *ConsumerWorker) Consumer(	ctx context.Context,
 	}()
 	otel.SetTextMapPropagator(xray.Propagator{})
 	otel.SetTracerProvider(tp)
+	tracer = tp.Tracer(appServer.InfoPod.PodName)
+	// ---------------------- OTEL ---------------
 
 	topics := []string{appServer.KafkaConfig.Topic.Credit}
 	sigchan := make(chan os.Signal, 1)
@@ -119,10 +122,8 @@ func (c *ConsumerWorker) Consumer(	ctx context.Context,
 					event := core.Event{}
 					json.Unmarshal(e.Value, &event)
 
-					tracer := tp.Tracer("go-worker-credit:" + event.EventData.Transfer.AccountIDTo + ":" + strconv.Itoa(event.EventData.Transfer.ID))
-					ctx, span := tracer.Start(ctx, "go-worker-credit")
-					defer span.End()
-
+					ctx, span := tracer.Start(ctx, "go-worker-credit:" + event.EventData.Transfer.AccountIDTo + ":" + strconv.Itoa(event.EventData.Transfer.ID))
+					
 					err = c.workerService.CreditFundSchedule(ctx, *event.EventData.Transfer)
 					if err != nil {
 						childLogger.Error().Err(err).Msg("Erro no Consumer.CreditFundSchedule")
@@ -131,6 +132,8 @@ func (c *ConsumerWorker) Consumer(	ctx context.Context,
 						childLogger.Debug().Msg("COMMIT!!!!")
 						c.consumer.Commit()
 					}
+
+					span.End()
 				case kafka.Error:
 					childLogger.Error().Err(e).Msg("kafka.Error")
 					if e.Code() == kafka.ErrAllBrokersDown {
