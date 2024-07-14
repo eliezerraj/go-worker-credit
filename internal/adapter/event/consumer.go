@@ -72,16 +72,20 @@ func (c *ConsumerWorker) Consumer(	ctx context.Context,
 	childLogger.Info().Str("OTEL_EXPORTER_OTLP_ENDPOINT :", appServer.ConfigOTEL.OtelExportEndpoint).Msg("")
 	
 	tp := lib.NewTracerProvider(ctx, appServer.ConfigOTEL, appServer.InfoPod)
+	otel.SetTextMapPropagator(xray.Propagator{})
+	otel.SetTracerProvider(tp)
+	tracer = tp.Tracer(appServer.InfoPod.PodName)
+	// ---------------------- OTEL ---------------
+
 	defer func() { 
 		err := tp.Shutdown(ctx)
 		if err != nil{
 			childLogger.Error().Err(err).Msg("Erro closing OTEL tracer !!!")
 		}
+		childLogger.Debug().Msg("Closing consumer waiting please !!!")
+		c.consumer.Close()
+		defer wg.Done()
 	}()
-	otel.SetTextMapPropagator(xray.Propagator{})
-	otel.SetTracerProvider(tp)
-	tracer = tp.Tracer(appServer.InfoPod.PodName)
-	// ---------------------- OTEL ---------------
 
 	topics := []string{appServer.KafkaConfig.Topic.Credit}
 	sigchan := make(chan os.Signal, 1)
@@ -145,7 +149,4 @@ func (c *ConsumerWorker) Consumer(	ctx context.Context,
 		}
 	}
 
-	childLogger.Debug().Msg("Closing consumer waiting please !!!")
-	c.consumer.Close()
-	defer wg.Done()
 }
