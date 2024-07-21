@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"github.com/rs/zerolog/log"
-	"github.com/go-worker-credit/internal/repository/postgre"
+	"github.com/go-worker-credit/internal/repository/pg"
 	"github.com/go-worker-credit/internal/adapter/restapi"
 	"github.com/go-worker-credit/internal/core"
 	"github.com/go-worker-credit/internal/erro"
@@ -13,20 +13,20 @@ import (
 var childLogger = log.With().Str("service", "service").Logger()
 
 type WorkerService struct {
-	workerRepository 		*postgre.WorkerRepository
-	restEndpoint			*core.RestEndpoint
-	restApiService			*restapi.RestApiService
+	workerRepo		*pg.WorkerRepository
+	appServer		*core.WorkerAppServer
+	restApiService	*restapi.RestApiService
 }
 
-func NewWorkerService(	workerRepository *postgre.WorkerRepository,
-						restEndpoint		*core.RestEndpoint,
-						restApiService		*restapi.RestApiService) *WorkerService{
+func NewWorkerService(	workerRepo		*pg.WorkerRepository,
+						appServer		*core.WorkerAppServer,
+						restApiService	*restapi.RestApiService) *WorkerService{
 	childLogger.Debug().Msg("NewWorkerService")
 
 	return &WorkerService{
-		workerRepository:	workerRepository,
-		restEndpoint:		restEndpoint,
-		restApiService:		restApiService,
+		workerRepo:	workerRepo,
+		appServer:	appServer,
+		restApiService:	restApiService,
 	}
 }
 
@@ -36,17 +36,18 @@ func (s WorkerService) CreditFundSchedule(ctx context.Context, transfer core.Tra
 	
 	span := lib.Span(ctx, "service.CreditFundSchedule")
 
-	tx, err := s.workerRepository.StartTx(ctx)
+	tx, conn, err := s.workerRepo.StartTx(ctx)
 	if err != nil {
 		return err
 	}
-
+	
 	defer func() {
 		if err != nil {
-			tx.Rollback()
+			tx.Rollback(ctx)
 		} else {
-			tx.Commit()
+			tx.Commit(ctx)
 		}
+		s.workerRepo.ReleaseTx(conn)
 		span.End()
 	}()
 
@@ -58,11 +59,14 @@ func (s WorkerService) CreditFundSchedule(ctx context.Context, transfer core.Tra
 	credit.Type = transfer.Type
 	transfer.Status = "CREDIT_DONE"
 
-	urlDomain := s.restEndpoint.ServiceUrlDomain + "/add"
+	path := s.appServer.RestEndpoint.ServiceUrlDomain + "/add"
+	_, err = s.restApiService.CallRestApi(ctx,"POST",path, &s.appServer.RestEndpoint.XApigwId,credit)
+
+	/*urlDomain := s.restEndpoint.ServiceUrlDomain + "/add"
 	_, err = s.restApiService.PostData(ctx, 
 										urlDomain, 
 										s.restEndpoint.XApigwId,
-										credit)
+										credit)*/
 	if err != nil {
 		switch err{
 			case erro.ErrTransInvalid:
@@ -73,7 +77,7 @@ func (s WorkerService) CreditFundSchedule(ctx context.Context, transfer core.Tra
 	}
 
 	childLogger.Debug().Interface("== 2 ==> transfer update:",transfer).Msg("")
-	res_update, err := s.workerRepository.Update(ctx,tx ,transfer)
+	res_update, err := s.workerRepo.Update(ctx,tx,transfer)
 	if err != nil {
 		return err
 	}
