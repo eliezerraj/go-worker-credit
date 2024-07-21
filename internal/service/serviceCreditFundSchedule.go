@@ -61,12 +61,6 @@ func (s WorkerService) CreditFundSchedule(ctx context.Context, transfer core.Tra
 
 	path := s.appServer.RestEndpoint.ServiceUrlDomain + "/add"
 	_, err = s.restApiService.CallRestApi(ctx,"POST",path, &s.appServer.RestEndpoint.XApigwId,credit)
-
-	/*urlDomain := s.restEndpoint.ServiceUrlDomain + "/add"
-	_, err = s.restApiService.PostData(ctx, 
-										urlDomain, 
-										s.restEndpoint.XApigwId,
-										credit)*/
 	if err != nil {
 		switch err{
 			case erro.ErrTransInvalid:
