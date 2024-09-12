@@ -13,6 +13,7 @@ import(
 	"github.com/go-worker-credit/internal/core"
 	"github.com/go-worker-credit/internal/service"
 	"github.com/go-worker-credit/internal/repository/pg"
+	"github.com/go-worker-credit/internal/repository/storage"
 	"github.com/go-worker-credit/internal/adapter/restapi"
 )
 
@@ -66,7 +67,7 @@ func main()  {
 		break
 	}
 
-	repoDB := pg.NewWorkerRepository(databasePG)
+	repoDB := storage.NewWorkerRepository(databasePG)
 	restApiService	:= restapi.NewRestApiService(&appServer)
 
 	workerService := service.NewWorkerService(	&repoDB, 

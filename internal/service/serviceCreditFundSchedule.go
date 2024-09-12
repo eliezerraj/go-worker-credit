@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"github.com/rs/zerolog/log"
-	"github.com/go-worker-credit/internal/repository/pg"
+	"github.com/go-worker-credit/internal/repository/storage"
 	"github.com/go-worker-credit/internal/adapter/restapi"
 	"github.com/go-worker-credit/internal/core"
 	"github.com/go-worker-credit/internal/erro"
@@ -13,12 +13,12 @@ import (
 var childLogger = log.With().Str("service", "service").Logger()
 
 type WorkerService struct {
-	workerRepo		*pg.WorkerRepository
+	workerRepo		*storage.WorkerRepository
 	appServer		*core.WorkerAppServer
 	restApiService	*restapi.RestApiService
 }
 
-func NewWorkerService(	workerRepo		*pg.WorkerRepository,
+func NewWorkerService(	workerRepo		*storage.WorkerRepository,
 						appServer		*core.WorkerAppServer,
 						restApiService	*restapi.RestApiService) *WorkerService{
 	childLogger.Debug().Msg("NewWorkerService")
