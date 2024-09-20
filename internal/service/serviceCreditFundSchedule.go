@@ -71,7 +71,7 @@ func (s WorkerService) CreditFundSchedule(ctx context.Context, transfer core.Tra
 	}
 
 	childLogger.Debug().Interface("== 2 ==> transfer update:",transfer).Msg("")
-	res_update, err := s.workerRepo.Update(ctx,tx,transfer)
+	res_update, err := s.workerRepo.Update(ctx,tx, &transfer)
 	if err != nil {
 		return err
 	}
