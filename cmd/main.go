@@ -10,6 +10,8 @@ import(
 
 	"github.com/go-worker-credit/internal/util"
 	"github.com/go-worker-credit/internal/adapter/event"
+	"github.com/go-worker-credit/internal/adapter/event/kafka"
+	"github.com/go-worker-credit/internal/adapter/event/sqs"
 	"github.com/go-worker-credit/internal/core"
 	"github.com/go-worker-credit/internal/service"
 	"github.com/go-worker-credit/internal/repository/pg"
@@ -20,6 +22,7 @@ import(
 var(
 	logLevel 	= 	zerolog.DebugLevel
 	appServer	core.WorkerAppServer
+	consumerWorker	event.EventNotifier
 )
 
 func init() {
@@ -30,12 +33,14 @@ func init() {
 	database := util.GetDatabaseEnv()
 	configOTEL := util.GetOtelEnv()
 	kafkaConfig := util.GetKafkaEnv()
+	queueConfig := util.GetQueueEnv()
 
 	appServer.InfoPod = &infoPod
 	appServer.Database = &database
 	appServer.RestEndpoint = &restEndpoint
 	appServer.ConfigOTEL = &configOTEL
 	appServer.KafkaConfig = &kafkaConfig
+	appServer.QueueConfig = &queueConfig
 }
 
 func main()  {
@@ -68,17 +73,18 @@ func main()  {
 	}
 
 	repoDB := storage.NewWorkerRepository(databasePG)
+
 	restApiService	:= restapi.NewRestApiService(&appServer)
 
-	workerService := service.NewWorkerService(	&repoDB, 
-												&appServer,
-												restApiService)
+	workerService := service.NewWorkerService(	&repoDB, &appServer, restApiService)
 
-	consumerWorker, err := event.NewConsumerWorker(ctx, 
-													appServer.KafkaConfig, 
-													workerService)
+	if (appServer.InfoPod.QueueType == "kafka") {
+		consumerWorker, err = kafka.NewConsumerWorker(appServer.KafkaConfig, workerService)
+	} else {
+		consumerWorker, err = sqs.NewNotifierSQS(ctx, appServer.QueueConfig, workerService)
+	}
 	if err != nil {
-		log.Error().Err(err).Msg("Erro na abertura do Kafka")
+		log.Error().Err(err).Msg("erro connect to queue")
 	}
 
 	var wg sync.WaitGroup

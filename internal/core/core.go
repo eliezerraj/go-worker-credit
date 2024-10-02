@@ -2,7 +2,6 @@ package core
 
 import (
 	"time"
-
 )
 
 type DatabaseRDS struct {
@@ -22,6 +21,7 @@ type WorkerAppServer struct {
 	RestEndpoint	*RestEndpoint	`json:"rest_endpoint"`
 	ConfigOTEL		*ConfigOTEL		`json:"otel_config"`
 	KafkaConfig		*KafkaConfig	`json:"kafka_config"`
+	QueueConfig		*QueueConfig	`json:"queue_config"`
 }
 
 type InfoPod struct {
@@ -33,6 +33,7 @@ type InfoPod struct {
 	IsAZ				bool   	`json:"is_az"`
 	Env					string `json:"enviroment,omitempty"`
 	AccountID			string `json:"account_id,omitempty"`
+	QueueType			string `json:"queue_type,omitempty"`
 }
 
 type RestEndpoint struct {
@@ -40,7 +41,6 @@ type RestEndpoint struct {
 	XApigwId			string `json:"xApigwId"`
 	ServerHost			string `json:"server_host_localhost,omitempty"`
 }
-
 
 type KafkaConfig struct {
 	KafkaConfigurations    	*KafkaConfigurations
@@ -78,6 +78,11 @@ type EventData struct {
 
 type Topic struct {
 	Credit     string    `json:"topic_credit"`
+}
+
+type QueueConfig struct {
+	QueueUrl	string	`json:"queue_url"`
+	AwsRegion	string	`json:"aws_region"`
 }
 
 type ConfigOTEL struct {

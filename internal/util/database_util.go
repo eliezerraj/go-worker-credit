@@ -2,7 +2,6 @@ package util
 
 import(
 	"os"
-	"io/ioutil"
 
 	"github.com/joho/godotenv"
 	"github.com/go-worker-credit/internal/core"
@@ -36,12 +35,12 @@ func GetDatabaseEnv() core.DatabaseRDS {
 	}
 
 	// Get Database Secrets
-	file_user, err := ioutil.ReadFile("/var/pod/secret/username")
+	file_user, err := os.ReadFile("/var/pod/secret/username")
 	if err != nil {
 		childLogger.Error().Err(err).Msg("Fatal erro get /var/pod/secret/username")
 		os.Exit(3)
 	}
-	file_pass, err := ioutil.ReadFile("/var/pod/secret/password")
+	file_pass, err := os.ReadFile("/var/pod/secret/password")
 	if err != nil {
 		childLogger.Error().Err(err).Msg("Fatal erro get /var/pod/secret/password")
 		os.Exit(3)

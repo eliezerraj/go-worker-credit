@@ -29,5 +29,8 @@ data:
   SERVICE_URL_DOMAIN: "https://vpce.global.dev.caradhras.io/pv"
   X_APIGW_API_ID: "cy5ry2263h"
   OTEL_EXPORTER_OTLP_ENDPOINT: "arch-eks-01-xray-collector.default.svc.cluster.local:4317"
+  QUEUE_URL_CREDIT: "https://sqs.us-east-2.amazonaws.com/908671954593/sqs-credit.fifo"
+  AWS_REGION: "us-east-2"
+  POD_QUEUE_TYPE: "kafka"
 
   #SERVICE_URL_DOMAIN: "http://svc-go-credit.test-a.svc.cluster.local:5001"

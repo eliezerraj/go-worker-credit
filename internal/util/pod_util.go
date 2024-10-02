@@ -40,6 +40,12 @@ func GetInfoPod() (	core.InfoPod,
 		infoPod.IsAZ = true
 	}
 
+	if os.Getenv("POD_QUEUE_TYPE") !=  "" {
+		infoPod.QueueType = os.Getenv("POD_QUEUE_TYPE")
+	} else {
+		infoPod.QueueType = "kafka"
+	}
+	
 	// Get IP
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
