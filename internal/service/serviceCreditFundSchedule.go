@@ -11,6 +11,7 @@ import (
 )
 
 var childLogger = log.With().Str("service", "service").Logger()
+var restApiCallData core.RestApiCallData
 
 type WorkerService struct {
 	workerRepo		*storage.WorkerRepository
@@ -59,8 +60,11 @@ func (s WorkerService) CreditFundSchedule(ctx context.Context, transfer core.Tra
 	credit.Type = transfer.Type
 	transfer.Status = "CREDIT_DONE"
 
-	path := s.appServer.RestEndpoint.ServiceUrlDomain + "/add"
-	_, err = s.restApiService.CallRestApi(ctx,"POST",path, &s.appServer.RestEndpoint.XApigwId,credit)
+	restApiCallData.Method = "POST"
+	restApiCallData.Url = s.appServer.RestEndpoint.ServiceUrlDomain + "/add/"
+	restApiCallData.X_Api_Id = &s.appServer.RestEndpoint.XApigwId
+
+	_, err = s.restApiService.CallApiRest(ctx, restApiCallData, credit)
 	if err != nil {
 		switch err{
 			case erro.ErrTransInvalid:

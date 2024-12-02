@@ -29,7 +29,7 @@ func init() {
 	log.Debug().Msg("init")
 	zerolog.SetGlobalLevel(logLevel)
 
-	infoPod, restEndpoint := util.GetInfoPod()
+	infoPod, restEndpoint, awsServiceConfig := util.GetInfoPod()
 	database := util.GetDatabaseEnv()
 	configOTEL := util.GetOtelEnv()
 	kafkaConfig := util.GetKafkaEnv()
@@ -41,6 +41,7 @@ func init() {
 	appServer.ConfigOTEL = &configOTEL
 	appServer.KafkaConfig = &kafkaConfig
 	appServer.QueueConfig = &queueConfig
+	appServer.AwsServiceConfig = &awsServiceConfig
 }
 
 func main()  {

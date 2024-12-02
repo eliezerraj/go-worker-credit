@@ -17,7 +17,8 @@ import(
 var childLogger = log.With().Str("util", "util").Logger()
 
 func GetInfoPod() (	core.InfoPod,
-					core.RestEndpoint) {
+					core.RestEndpoint,
+					core.AwsServiceConfig) {
 	childLogger.Debug().Msg("GetInfoPod")
 
 	err := godotenv.Load(".env")
@@ -27,6 +28,7 @@ func GetInfoPod() (	core.InfoPod,
 
 	var infoPod 	core.InfoPod
 	var restEndpoint core.RestEndpoint
+	var awsServiceConfig core.AwsServiceConfig
 
 	if os.Getenv("API_VERSION") !=  "" {
 		infoPod.ApiVersion = os.Getenv("API_VERSION")
@@ -86,5 +88,15 @@ func GetInfoPod() (	core.InfoPod,
 		restEndpoint.XApigwId = os.Getenv("X_APIGW_API_ID")
 	}
 
-	return infoPod, restEndpoint
+	if os.Getenv("SERVICE_URL_JWT_SA") !=  "" {	
+		awsServiceConfig.ServiceUrlJwtSA = os.Getenv("SERVICE_URL_JWT_SA")
+	}
+	if os.Getenv("SECRET_JWT_SA_CREDENTIAL") !=  "" {	
+		awsServiceConfig.SecretJwtSACredential = os.Getenv("SECRET_JWT_SA_CREDENTIAL")
+	}
+	if os.Getenv("AWS_REGION") !=  "" {
+		awsServiceConfig.AwsRegion = os.Getenv("AWS_REGION")
+	}
+
+	return infoPod, restEndpoint, awsServiceConfig
 }
