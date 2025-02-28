@@ -61,7 +61,10 @@ func (s *ServerWorker) Consumer(ctx context.Context, wg *sync.WaitGroup ) {
 		_, err := s.workerService.UpdateCreditMovimentTransfer(ctx, &transfer)
 		if err != nil {
 			childLogger.Error().Err(err).Msg("failed update msg: %v : " + msg)
+			childLogger.Debug().Msg("ROLLBACK!!!!")
+		} else {
+			s.workerEvent.WorkerKafka.Commit()
+			childLogger.Debug().Msg("COMMIT!!!!")
 		}
-
 	}
 }
