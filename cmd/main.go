@@ -1,50 +1,48 @@
 package main
 
 import(
-	"sync"
-	"context"
 	"time"
+	"context"
+	"sync"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
-	"github.com/go-worker-credit/internal/util"
+	"github.com/go-worker-credit/internal/infra/configuration"
+	"github.com/go-worker-credit/internal/core/model"
+	"github.com/go-worker-credit/internal/core/service"
+	"github.com/go-worker-credit/internal/adapter/database"
 	"github.com/go-worker-credit/internal/adapter/event"
-	"github.com/go-worker-credit/internal/adapter/event/kafka"
-	"github.com/go-worker-credit/internal/adapter/event/sqs"
-	"github.com/go-worker-credit/internal/core"
-	"github.com/go-worker-credit/internal/service"
-	"github.com/go-worker-credit/internal/repository/pg"
-	"github.com/go-worker-credit/internal/repository/storage"
-	"github.com/go-worker-credit/internal/adapter/restapi"
+	"github.com/go-worker-credit/internal/infra/server"
+	go_core_pg "github.com/eliezerraj/go-core/database/pg"  
 )
 
 var(
-	logLevel 	= 	zerolog.DebugLevel
-	appServer	core.WorkerAppServer
-	consumerWorker	event.EventNotifier
+	logLevel = 	zerolog.DebugLevel
+	appServer	model.AppServer
+	databaseConfig go_core_pg.DatabaseConfig
+	databasePGServer go_core_pg.DatabasePGServer
 )
 
-func init() {
+func init(){
 	log.Debug().Msg("init")
 	zerolog.SetGlobalLevel(logLevel)
 
-	infoPod, restEndpoint, awsServiceConfig := util.GetInfoPod()
-	database := util.GetDatabaseEnv()
-	configOTEL := util.GetOtelEnv()
-	kafkaConfig := util.GetKafkaEnv()
-	queueConfig := util.GetQueueEnv()
+	infoPod := configuration.GetInfoPod()
+	configOTEL 		:= configuration.GetOtelEnv()
+	databaseConfig 	:= configuration.GetDatabaseEnv() 
+	apiService 	:= configuration.GetEndpointEnv() 
+	kafkaConfigurations, topics := configuration.GetKafkaEnv() 
 
 	appServer.InfoPod = &infoPod
-	appServer.Database = &database
-	appServer.RestEndpoint = &restEndpoint
 	appServer.ConfigOTEL = &configOTEL
-	appServer.KafkaConfig = &kafkaConfig
-	appServer.QueueConfig = &queueConfig
-	appServer.AwsServiceConfig = &awsServiceConfig
+	appServer.DatabaseConfig = &databaseConfig
+	appServer.ApiService = apiService
+	appServer.KafkaConfigurations = &kafkaConfigurations
+	appServer.Topics = topics
 }
 
-func main()  {
+func main (){
 	log.Debug().Msg("----------------------------------------------------")
 	log.Debug().Msg("main")
 	log.Debug().Msg("----------------------------------------------------")
@@ -55,43 +53,38 @@ func main()  {
 
 	// Open Database
 	count := 1
-	var databasePG	pg.DatabasePG
 	var err error
 	for {
-		databasePG, err = pg.NewDatabasePGServer(ctx, appServer.Database)
+		databasePGServer, err = databasePGServer.NewDatabasePGServer(ctx, *appServer.DatabaseConfig)
 		if err != nil {
 			if count < 3 {
-				log.Error().Err(err).Msg("Erro open Database... trying again !!")
+				log.Error().Err(err).Msg("error open database... trying again !!")
 			} else {
-				log.Error().Err(err).Msg("Fatal erro open Database aborting")
+				log.Error().Err(err).Msg("fatal error open Database aborting")
 				panic(err)
 			}
-			time.Sleep(3 * time.Second)
+			time.Sleep(3 * time.Second) //backoff
 			count = count + 1
 			continue
 		}
 		break
 	}
 
-	repoDB := storage.NewWorkerRepository(databasePG)
+	// Database
+	database := database.NewWorkerRepository(&databasePGServer)
+	workerService := service.NewWorkerService(database, appServer.ApiService)
 
-	restApiService	:= restapi.NewRestApiService(&appServer)
-
-	workerService := service.NewWorkerService(	&repoDB, &appServer, restApiService)
-
-	if (appServer.InfoPod.QueueType == "kafka") {
-		consumerWorker, err = kafka.NewConsumerWorker(appServer.KafkaConfig, workerService)
-	} else {
-		consumerWorker, err = sqs.NewNotifierSQS(ctx, appServer.QueueConfig, workerService)
-	}
+	// Kafka
+	workerEvent, err := event.NewWorkerEvent(ctx, appServer.Topics, appServer.KafkaConfigurations)
 	if err != nil {
-		log.Error().Err(err).Msg("erro connect to queue")
+		log.Error().Err(err).Msg("error open kafka")
+		panic(err)
 	}
+
+	serverWorker := server.NewServerWorker(workerService, workerEvent)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go consumerWorker.Consumer(	ctx, 
-								&wg, 
-								appServer)
+	go serverWorker.Consumer(ctx, &wg)
 	wg.Wait()
 }
