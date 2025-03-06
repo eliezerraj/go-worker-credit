@@ -25,7 +25,7 @@ type ServerWorker struct {
 }
 
 func NewServerWorker(workerService *service.WorkerService, workerEvent *event.WorkerEvent ) *ServerWorker {
-	childLogger.Debug().Msg("NewWorkerEvent")
+	childLogger.Debug().Msg("NewServerWorker")
 
 	return &ServerWorker{
 		workerService: workerService,
