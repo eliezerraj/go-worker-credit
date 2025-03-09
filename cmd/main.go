@@ -75,7 +75,7 @@ func main (){
 	workerService := service.NewWorkerService(database, appServer.ApiService)
 
 	// Kafka
-	workerEvent, err := event.NewWorkerEvent(ctx, appServer.Topics, appServer.KafkaConfigurations)
+	workerEvent, err := event.NewWorkerEvent(appServer.Topics, appServer.KafkaConfigurations)
 	if err != nil {
 		log.Error().Err(err).Msg("error open kafka")
 		panic(err)
@@ -85,6 +85,6 @@ func main (){
 
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go serverWorker.Consumer(ctx, &wg)
+	go serverWorker.Consumer(ctx, &appServer, &wg)
 	wg.Wait()
 }

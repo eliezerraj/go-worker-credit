@@ -37,7 +37,6 @@ func (s WorkerService) UpdateCreditMovimentTransfer(ctx context.Context, transfe
 
 	//Trace
 	span := tracerProvider.Span(ctx, "service.UpdateCreditMovimentTransfer")
-	defer span.End()
 
 	// Get the database connection
 	tx, conn, err := s.workerRepository.DatabasePGServer.StartTx(ctx)
