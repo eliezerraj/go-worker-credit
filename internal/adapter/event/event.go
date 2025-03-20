@@ -15,7 +15,7 @@ type WorkerEvent struct {
 }
 
 func NewWorkerEvent(topics []string, kafkaConfigurations *go_core_event.KafkaConfigurations) (*WorkerEvent, error) {
-	childLogger.Debug().Msg("NewWorkerEvent")
+	childLogger.Info().Msg("NewWorkerEvent")
 
 	workerKafka, err := consumerWorker.NewConsumerWorker(kafkaConfigurations)
 	if err != nil {

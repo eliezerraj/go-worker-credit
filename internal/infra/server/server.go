@@ -6,6 +6,7 @@ import (
 	"sync"
 	"encoding/json"
 
+	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"github.com/go-worker-credit/internal/core/service"
 	"github.com/go-worker-credit/internal/adapter/event"
@@ -31,8 +32,24 @@ type ServerWorker struct {
 	workerEvent 	*event.WorkerEvent
 }
 
+// Set a trace-i inside the context
+func setContextTraceId(ctx context.Context, trace_id *string) context.Context {
+	childLogger.Info().Interface("trace_id", trace_id).Msg("setContextTraceId")
+
+	var traceUUID string
+
+	if trace_id == nil{
+		traceUUID = uuid.New().String()
+		trace_id = &traceUUID
+	}
+
+	ctx = context.WithValue(ctx, "trace-request-id", trace_id)
+	return ctx
+}
+
+// About create a worrker event
 func NewServerWorker(workerService *service.WorkerService, workerEvent *event.WorkerEvent ) *ServerWorker {
-	childLogger.Debug().Msg("NewServerWorker")
+	childLogger.Info().Msg("NewServerWorker")
 
 	return &ServerWorker{
 		workerService: workerService,
@@ -40,8 +57,9 @@ func NewServerWorker(workerService *service.WorkerService, workerEvent *event.Wo
 	}
 }
 
+// About consume event kafka
 func (s *ServerWorker) Consumer(ctx context.Context, appServer *model.AppServer ,wg *sync.WaitGroup ) {
-	childLogger.Debug().Msg("Consumer")
+	childLogger.Info().Msg("Consumer")
 
 	// otel
 	childLogger.Info().Str("OTEL_EXPORTER_OTLP_ENDPOINT :", appServer.ConfigOTEL.OtelExportEndpoint).Msg("")
@@ -65,32 +83,41 @@ func (s *ServerWorker) Consumer(ctx context.Context, appServer *model.AppServer 
 		if err != nil{
 			childLogger.Error().Err(err).Msg("error closing OTEL tracer !!!")
 		}
-		childLogger.Debug().Msg("closing consumer waiting please !!!")
+		childLogger.Info().Msg("closing consumer waiting please !!!")
 		defer wg.Done()
 	}()
 
-	messages := make(chan string)
+	messages := make(chan go_core_event.Message)
 
 	go s.workerEvent.WorkerKafka.Consumer(s.workerEvent.Topics, messages)
 
 	for msg := range messages {
-		childLogger.Debug().Msg("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-		childLogger.Debug().Interface("msg: ",msg).Msg("")
-		childLogger.Debug().Msg("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+		childLogger.Info().Msg("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+		childLogger.Info().Interface("msg: ",msg).Msg("")
+		childLogger.Info().Msg("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 		
+		// Marshall payload	
 		var transfer model.Transfer
-		json.Unmarshal([]byte(msg), &transfer)
+		json.Unmarshal([]byte(msg.Payload), &transfer)
+
+		// valid the headers, if there isnt a traceid it will be created
+		var header string
+		if (*msg.Header)["trace-request-id"] != "" {
+			header = (*msg.Header)["trace-request-id"]
+		}
+		ctx = setContextTraceId(ctx, &header)
 
 		//Trace
-		ctx, span := tracer.Start(ctx, fmt.Sprintf("go-worker-credit:%v" , transfer.ID ))
+		ctx, span := tracer.Start(ctx, fmt.Sprintf("go-worker-credit:%v - %v" , transfer.ID, ctx.Value("trace-request-id") ))
 
+		// call service
 		_, err := s.workerService.UpdateCreditMovimentTransfer(ctx, &transfer)
 		if err != nil {
-			childLogger.Error().Err(err).Msg("failed update msg: %v : " + msg)
-			childLogger.Debug().Msg("ROLLBACK!!!!")
+			childLogger.Error().Err(err).Msg("failed update msg: %v : " + msg.Payload)
+			childLogger.Info().Msg("ROLLBACK!!!!")
 		} else {
 			s.workerEvent.WorkerKafka.Commit()
-			childLogger.Debug().Msg("COMMIT!!!!")
+			childLogger.Info().Msg("COMMIT!!!!")
 		}
 		defer span.End()
 	}
