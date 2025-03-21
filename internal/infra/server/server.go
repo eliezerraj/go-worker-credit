@@ -33,17 +33,17 @@ type ServerWorker struct {
 }
 
 // Set a trace-i inside the context
-func setContextTraceId(ctx context.Context, trace_id *string) context.Context {
+func setContextTraceId(ctx context.Context, trace_id string) context.Context {
 	childLogger.Info().Interface("trace_id", trace_id).Msg("setContextTraceId")
 
 	var traceUUID string
 
-	if trace_id == nil{
+	if trace_id == "" {
 		traceUUID = uuid.New().String()
-		trace_id = &traceUUID
+		trace_id = traceUUID
 	}
 
-	ctx = context.WithValue(ctx, "trace-request-id", trace_id)
+	ctx = context.WithValue(ctx, "trace-request-id",  trace_id  )
 	return ctx
 }
 
@@ -105,7 +105,7 @@ func (s *ServerWorker) Consumer(ctx context.Context, appServer *model.AppServer 
 		if (*msg.Header)["trace-request-id"] != "" {
 			header = (*msg.Header)["trace-request-id"]
 		}
-		ctx = setContextTraceId(ctx, &header)
+		ctx = setContextTraceId(ctx, header)
 
 		//Trace
 		ctx, span := tracer.Start(ctx, fmt.Sprintf("go-worker-credit:%v - %v" , transfer.ID, ctx.Value("trace-request-id") ))
@@ -113,11 +113,11 @@ func (s *ServerWorker) Consumer(ctx context.Context, appServer *model.AppServer 
 		// call service
 		_, err := s.workerService.UpdateCreditMovimentTransfer(ctx, &transfer)
 		if err != nil {
-			childLogger.Error().Err(err).Msg("failed update msg: %v : " + msg.Payload)
-			childLogger.Info().Msg("ROLLBACK!!!!")
+			childLogger.Error().Err(err).Interface("trace-resquest-id", ctx.Value("trace-request-id")).Msg("failed update msg: %v : " + msg.Payload)
+			childLogger.Info().Interface("trace-resquest-id", ctx.Value("trace-request-id")).Msg("ROLLBACK!!!!")
 		} else {
 			s.workerEvent.WorkerKafka.Commit()
-			childLogger.Info().Msg("COMMIT!!!!")
+			childLogger.Info().Interface("trace-resquest-id", ctx.Value("trace-request-id")).Msg("COMMIT!!!!")
 		}
 		defer span.End()
 	}

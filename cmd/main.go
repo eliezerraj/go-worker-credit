@@ -18,7 +18,7 @@ import(
 )
 
 var(
-	logLevel = 	zerolog.DebugLevel
+	logLevel = 	zerolog.InfoLevel // zerolog.InfoLevel zerolog.DebugLevel
 	appServer	model.AppServer
 	databaseConfig go_core_pg.DatabaseConfig
 	databasePGServer go_core_pg.DatabasePGServer
@@ -75,7 +75,7 @@ func main (){
 	workerService := service.NewWorkerService(database, appServer.ApiService)
 
 	// Kafka
-	workerEvent, err := event.NewWorkerEvent(appServer.Topics, appServer.KafkaConfigurations)
+	workerEvent, err := event.NewWorkerEvent(ctx, appServer.Topics, appServer.KafkaConfigurations)
 	if err != nil {
 		log.Error().Err(err).Msg("error open kafka")
 		panic(err)
