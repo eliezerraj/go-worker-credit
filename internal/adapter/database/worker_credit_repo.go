@@ -13,8 +13,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+var childLogger = log.With().Str("component","go-worker-credit").Str("package","internal.adapter.database").Logger()
 var tracerProvider go_core_observ.TracerProvider
-var childLogger = log.With().Str("adapter", "database").Logger()
 
 type WorkerRepository struct {
 	DatabasePGServer *go_core_pg.DatabasePGServer
@@ -81,7 +81,7 @@ func (w WorkerRepository) UpdateCreditMovimentTransfer(ctx context.Context, tx p
 		return 0, errors.New(err.Error())
 	}
 
-	childLogger.Info().Interface("trace-resquest-id", ctx.Value("trace-request-id")).Interface("rowsAffected : ", row.RowsAffected()).Msg("")
+	childLogger.Info().Interface("trace-resquest-id", ctx.Value("trace-request-id")).Interface("rowsAffected : ", row.RowsAffected()).Send()
 
 	return int64(row.RowsAffected()) , nil
 }
